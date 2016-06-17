@@ -3,12 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 type Plugin struct {
@@ -37,47 +38,41 @@ func Filter(vs []Plugin, f func(Plugin) bool) []Plugin {
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	fmt.Fprintf(w, `Snap Plugin API Server:
 
-/plugins
-/plugins/collector
-/plugins/processor
-/plugins/publisher
+/plugin
+/plugin/collector
+/plugin/processor
+/plugin/publisher
 /plugin/:name`)
 }
 
 func ListPlugin(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	fmt.Fprintf(w, "hello, %s!\n", ps.ByName("name"))
-}
-
-func ListPlugins(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-
 	file, e := ioutil.ReadFile("./plugins.json")
 	if e != nil {
 		fmt.Fprintf(w, "File error: %v\n", e)
 	}
-
-	plugins := make([]Plugin, 0)
-	err := json.Unmarshal(file, &plugins)
+	pluginNames := make([]Plugin, 0)
+	err := json.Unmarshal(file, &pluginNames)
 	if err != nil {
 		fmt.Fprint(w, err)
 	} else {
-		plugin_type := strings.ToLower(ps.ByName("type"))
-		if plugin_type != "" {
-			plugins = Filter(plugins, func(v Plugin) bool {
-				return strings.Contains(v.Type, plugin_type)
+		plugin_name := strings.ToLower(ps.ByName("full_name"))
+		if plugin_name != "" {
+			pluginNames = Filter(pluginNames, func(v Plugin) bool {
+				return strings.Contains(v.FullName, plugin_name)
 			})
 		}
 
-		output, _ := json.MarshalIndent(plugins, "", "    ")
+		output, _ := json.MarshalIndent(pluginNames, "", "    ")
 		fmt.Fprint(w, string(output))
 	}
+
 }
 
 func main() {
 	router := httprouter.New()
 	router.GET("/", Index)
-	router.GET("/plugins", ListPlugins)
-	router.GET("/plugins/:type", ListPlugins)
-	router.GET("/plugin/:name", ListPlugin)
+	router.GET("/plugin", ListPlugin)
+	router.GET("/plugin/:full_name", ListPlugin)
 
 	var port = os.Getenv("PORT")
 	if port == "" {
