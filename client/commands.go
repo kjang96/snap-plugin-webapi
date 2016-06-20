@@ -5,15 +5,11 @@ import "github.com/codegangsta/cli"
 var (
 	commands = []cli.Command{
 		{
-			Name:   "info",
+			Name:   "list",
 			Usage:  "Display the info of a plugin",
 			Action: infoByName,
 		},
-    {
-			Name:   "",
-			Usage:  "How to use this command",
-			Action: infoByName,
-		}}
+	}
 )
 
 // ByCommand contains array of CLI commands.
