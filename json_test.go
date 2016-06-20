@@ -1,24 +1,28 @@
 package main
 
 import (
-   "encoding/json"
-    "io/ioutil"
-    "testing"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"testing"
 )
 
 func TestJSON(t *testing.T) {
-    buf, _ := ioutil.ReadFile("plugins.json")
-    s:= string(buf)
-    if isJSON(s){
-       //nothing here since pass by default
-    } else{
-        t.Fail()
-    }
-    
+	buf, err := ioutil.ReadFile("plugins.json")
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+
+	}
+	err = isJSON(buf)
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+	}
+
 }
 
-func isJSON( str string ) bool {
-     var temp interface{}
-     return json.Unmarshal([]byte(str), &temp) == nil
- }
-
+func isJSON(buf []byte) error {
+	var temp interface{}
+	return json.Unmarshal(buf, &temp)
+}
