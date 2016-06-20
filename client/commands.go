@@ -5,7 +5,12 @@ import "github.com/codegangsta/cli"
 var (
 	commands = []cli.Command{
 		{
-			Name:   "list",
+			Name:   "info",
+			Usage:  "Display the info of a plugin",
+			Action: infoByName,
+		},
+    {
+			Name:   "",
 			Usage:  "How to use this command",
 			Action: infoByName,
 		}}
