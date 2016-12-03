@@ -12,6 +12,19 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+/*
+Endpoint Structure:
+http://127.0.0.1:8080/plugins
+http://127.0.0.1:8080/plugins/
+http://127.0.0.1:8080/plugins/type/:type [eg collector, publisher, publisher]
+http://127.0.0.1:8080/plugin/:name [for a specific plugin or ListPlugins]
+http://127.0.0.1:8080/plugin/
+
+
+
+
+*/
+
 type Plugin struct {
 	Name        string `json:"name"`
 	FullName    string `json:"full_name"`
@@ -25,6 +38,8 @@ type Plugin struct {
 	Issues      int    `json:"issues_count"`
 }
 
+// Filter takes in an array of plugins, a condition, and returns
+// a filtered array of plugins
 func Filter(vs []Plugin, f func(Plugin) bool) []Plugin {
 	vsf := make([]Plugin, 0)
 	for _, v := range vs {
@@ -45,34 +60,44 @@ func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 /plugin/:name`)
 }
 
-func ListPlugin(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	file, e := ioutil.ReadFile("./plugins.json")
-	if e != nil {
-		fmt.Fprintf(w, "File error: %v\n", e)
-	}
+// ListPlugins works for a specific plugin or all of them
+func ListPlugins(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	body := getPluginData("http://staging.webapi.snap-telemetry.io/plugin")
 	pluginNames := make([]Plugin, 0)
-	err := json.Unmarshal(file, &pluginNames)
+	err := json.Unmarshal(body, &pluginNames)
 	if err != nil {
 		fmt.Fprint(w, err)
 	} else {
-		plugin_name := strings.ToLower(ps.ByName("full_name"))
-		if plugin_name != "" {
+		pluginName := strings.ToLower(ps.ByName("name"))
+		if pluginName != "" {
 			pluginNames = Filter(pluginNames, func(v Plugin) bool {
-				return strings.Contains(v.FullName, plugin_name)
+				return strings.Contains(v.FullName, pluginName)
 			})
 		}
 
 		output, _ := json.MarshalIndent(pluginNames, "", "    ")
 		fmt.Fprint(w, string(output))
 	}
+}
 
+func getPluginData(url string) []byte {
+	resp, err := http.Get(url)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	return body
 }
 
 func main() {
 	router := httprouter.New()
 	router.GET("/", Index)
-	router.GET("/plugin", ListPlugin)
-	router.GET("/plugin/:full_name", ListPlugin)
+	router.GET("/plugin", ListPlugins)
+	router.GET("/plugin/:name", ListPlugins)
 
 	var port = os.Getenv("PORT")
 	if port == "" {
